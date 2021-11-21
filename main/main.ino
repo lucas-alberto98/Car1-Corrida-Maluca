@@ -1,17 +1,19 @@
+
 #include <ArduinoWebsockets.h>
 #include <WiFi.h>
 #include <ArduinoJson.h>
+#include <analogWrite.h>
 
-const char* ssid = "BOTZ"; //Enter SSID
-const char* password = "robots123"; //Enter Password
-const char* websockets_server = "http://10.0.0.100:8080"; //server adress and port
+const char *ssid = "BOTZ";                                //Enter SSID
+const char *password = "robots123";                       //Enter Password
+const char *websockets_server = "http://10.0.0.100:8080"; //server adress and port
 
-#define MOTOR1_PIN1 36
-#define MOTOR1_PIN2 39
-#define MOTOR1_VELOCITY 24
+#define MOTOR1_PIN1 33
+#define MOTOR1_PIN2 32
+#define MOTOR1_VELOCITY 26
 
-#define MOTOR2_PIN1 34
-#define MOTOR2_PIN2 35
+#define MOTOR2_PIN1 13
+#define MOTOR2_PIN2 12
 #define MOTOR2_VELOCITY 25
 
 int left = 0;
@@ -19,68 +21,81 @@ int right = 0;
 
 using namespace websockets;
 WebsocketsClient client;
+StaticJsonDocument<200> doc;
 
-void onMessageCallback(WebsocketsMessage message) {
-    StaticJsonDocument<200> doc;
-
+void onMessageCallback(WebsocketsMessage message)
+{
+    // Serial.print("Got Message: ");
+    // Serial.println(message.data());
 
     Serial.print("Got Message: ");
-    char data[] = message.getData();
+    Serial.println(message.data());
+    String json = (String)message.data();
 
     // Deserialize the JSON document
     DeserializationError error = deserializeJson(doc, json);
 
     // Test if parsing succeeds.
-    if (error) {
+    if (error)
+    {
         Serial.print(F("deserializeJson() failed: "));
         Serial.println(error.f_str());
         return;
     }
 
-    char* mode = doc["mode"];
+    String mode = doc["mode"];
 
-    if(mode === "server"){
-       int left = doc["left"];
+    Serial.println("mode" + mode);
 
-       if(left > 0){
+    if (mode == "server")
+    {
+        int left = (int)doc["left"];
+
+        if (left > 0)
+        {
             digitalWrite(MOTOR1_PIN1, HIGH);
             digitalWrite(MOTOR1_PIN2, LOW);
-            analogWrite(MOTOR1_VELOCITY, left);
+            analogWrite(MOTOR1_VELOCITY, left, 255);
         }
-        else if(left < 0){
+        else if (left < 0)
+        {
             digitalWrite(MOTOR1_PIN1, LOW);
             digitalWrite(MOTOR1_PIN2, HIGH);
-            analogWrite(MOTOR1_VELOCITY, (left * (-1)));
+            analogWrite(MOTOR1_VELOCITY, (left * (-1)), 255);
         }
-        else{
+        else
+        {
             digitalWrite(MOTOR1_PIN1, LOW);
             digitalWrite(MOTOR1_PIN2, LOW);
-            analogWrite(MOTOR1_VELOCITY, 0);
+            analogWrite(MOTOR1_VELOCITY, 0, 255);
         }
 
-        int right = doc["right"];
+        int right = (int)doc["right"];
 
-        if(right > 0){
+        if (right > 0)
+        {
             digitalWrite(MOTOR2_PIN1, HIGH);
             digitalWrite(MOTOR2_PIN2, LOW);
-            analogWrite(MOTOR2_VELOCITY, right);
+            analogWrite(MOTOR2_VELOCITY, right, 255);
+            Serial.println("testeee");
         }
-        else if(right < 0){
+        else if (right < 0)
+        {
             digitalWrite(MOTOR2_PIN1, LOW);
             digitalWrite(MOTOR2_PIN2, HIGH);
-            analogWrite(MOTOR2_VELOCITY, (right * (-1)));
+            analogWrite(MOTOR2_VELOCITY, (right * (-1)), 255);
         }
-        else{
+        else
+        {
             digitalWrite(MOTOR2_PIN1, LOW);
             digitalWrite(MOTOR2_PIN2, LOW);
-            analogWrite(MOTOR2_VELOCITY, 0);
+            analogWrite(MOTOR2_VELOCITY, 0, 255);
         }
-     
     }
 }
 
-
-void setup() {
+void setup()
+{
     pinMode(MOTOR1_PIN1, OUTPUT);
     pinMode(MOTOR1_PIN2, OUTPUT);
     pinMode(MOTOR1_VELOCITY, OUTPUT);
@@ -88,7 +103,6 @@ void setup() {
     pinMode(MOTOR2_PIN1, OUTPUT);
     pinMode(MOTOR2_PIN2, OUTPUT);
     pinMode(MOTOR2_VELOCITY, OUTPUT);
-  
 
     Serial.begin(115200);
     // Connect to wifi
@@ -96,7 +110,8 @@ void setup() {
     WiFi.begin(ssid, password);
 
     // Wait some time to connect to wifi
-    for(int i = 0; i < 10 && WiFi.status() != WL_CONNECTED; i++) {
+    for (int i = 0; i < 10 && WiFi.status() != WL_CONNECTED; i++)
+    {
         Serial.print(".");
         delay(1000);
     }
@@ -107,18 +122,17 @@ void setup() {
     // Setup Callbacks
     client.onMessage(onMessageCallback);
     // client.onEvent(onEventsCallback);
-    
+
     // Connect to server
     client.connect(websockets_server);
 
     // Send a message
-    client.send("Hi Server!");
+    // client.send("Hi Server!");
     // Send a ping
     client.ping();
-
-
 }
 
-void loop() {
+void loop()
+{
     client.poll();
 }
